@@ -5,7 +5,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset, Subset, DataLoader
 
 import torch.multiprocessing as mp
 from torch.utils.data.distributed import DistributedSampler
@@ -19,17 +19,27 @@ from helper_cupti_um import setup_cupti_um, free_cupti_um
 from managed_alloc import managed_alloc
 
 training_verbose = False
+dataset = "CIFAR10" 
 
 def setup_dataset():
     if training_verbose:
         print("Setting up CIFAR10 dataset")
-    transform = transforms.Compose([
-        transforms.Resize((227, 227)),
+        # print("Setting up MNIST dataset")
+
+    trainset = torchvision.datasets.CIFAR10(root='./data', train=True, download=True, transform=transforms.Compose([
+        transforms.Resize((224, 224)),
         transforms.ToTensor(),
         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
-    ])
+    ]))
 
-    trainset = torchvision.datasets.CIFAR10(root='./data', train=True, download=True, transform=transform)
+    # trainset = torchvision.datasets.MNIST(
+    #     root='./data', train=True, download=True,
+    #     transform=transforms.Compose([
+    #         transforms.Resize((28, 28)),
+    #         transforms.ToTensor(),
+    #         transforms.Normalize((0.5,), (0.5,))
+    #     ])
+    # )
     # trainloader = torch.utils.data.DataLoader(trainset, batch_size=16, shuffle=True)
 
     # testset = torchvision.datasets.CIFAR10(root='./data', train=False, download=True, transform=transform)
@@ -39,6 +49,10 @@ def setup_dataset():
 
 
 def ddp_setup():
+    os.environ["NCCL_DEBUG"] = "INFO"
+    os.environ["NCCL_P2P_DISABLE"] = "1"
+    # os.environ["NCCL_IB_DISABLE"] = "1"
+
     torch.cuda.set_device(int(os.environ["LOCAL_RANK"]))
     init_process_group(backend="nccl")
 
@@ -110,6 +124,7 @@ def load_train_objs():
 
 
 def prepare_dataloader(dataset: Dataset, batch_size: int):
+    dataset = Subset(dataset, range(0, 1000)) # limit to 1000 samples for quick testing
     return DataLoader(
         dataset,
         batch_size=batch_size,
@@ -138,7 +153,7 @@ if __name__ == "__main__":
 
     managed_alloc()
 
-    setup_cupti_um(filename=f"alexnet_output_epochs_{args.total_epochs}_batch_{args.batch_size}.txt")
+    setup_cupti_um(filename=f"alexnet_{dataset}_epochs_{args.total_epochs}_batch_{args.batch_size}.txt")
 
     main(args.save_every, args.total_epochs, args.batch_size)
     
