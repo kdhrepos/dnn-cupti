@@ -26,26 +26,67 @@ global_error_count = 0
 
 
 default_activity_list: list[cupti.ActivityKind] = [
-#   cupti.ActivityKind.CONCURRENT_KERNEL,
-  cupti.ActivityKind.MEMCPY,
-#   cupti.ActivityKind.DRIVER,
-    cupti.ActivityKind.MEMORY2,
-#   cupti.ActivityKind.CONTEXT,
-#   cupti.ActivityKind.GRAPH_TRACE,
-#   cupti.ActivityKind.EXTERNAL_CORRELATION,
-  cupti.ActivityKind.NAME,
-#   cupti.ActivityKind.MARKER,
-#   cupti.ActivityKind.MARKER_DATA,
-  cupti.ActivityKind.STREAM,
-#   cupti.ActivityKind.SYNCHRONIZATION,
-#   cupti.ActivityKind.JIT,
-    cupti.ActivityKind.OVERHEAD,
-    cupti.ActivityKind.MEMORY_POOL,
-#   cupti.ActivityKind.MEMSET,
-  cupti.ActivityKind.DEVICE,
-    cupti.ActivityKind.MEMCPY2,
+    # cupti.ActivityKind.CONCURRENT_KERNEL,
+    # cupti.ActivityKind.MEMCPY,
+    # cupti.ActivityKind.DRIVER,
+    # cupti.ActivityKind.MEMORY2,
+    # cupti.ActivityKind.CONTEXT,
+    # cupti.ActivityKind.GRAPH_TRACE,
+    # cupti.ActivityKind.EXTERNAL_CORRELATION,
+    # cupti.ActivityKind.NAME,
+    # cupti.ActivityKind.MARKER,
+    # cupti.ActivityKind.MARKER_DATA,
+    # cupti.ActivityKind.STREAM,
+    # cupti.ActivityKind.SYNCHRONIZATION,
+    # cupti.ActivityKind.JIT,
+    # cupti.ActivityKind.OVERHEAD,
+    # cupti.ActivityKind.MEMORY_POOL,
+    # cupti.ActivityKind.MEMSET,
+    # cupti.ActivityKind.DEVICE,
+    # cupti.ActivityKind.MEMCPY2,
     cupti.ActivityKind.UNIFIED_MEMORY_COUNTER,
 ]
+
+def get_uvm_flag_string(kind, flag):
+    if (kind == cupti.ActivityUnifiedMemoryCounterKind.BYTES_TRANSFER_DTOH or
+        kind == cupti.ActivityUnifiedMemoryCounterKind.BYTES_TRANSFER_HTOD):
+        if (flag == cupti.ActivityUnifiedMemoryAccessType.READ):
+            return "READ"
+        if (flag == cupti.ActivityUnifiedMemoryAccessType.WRITE):
+            return "WRITE"
+        if (flag == cupti.ActivityUnifiedMemoryAccessType.ATOMIC):
+            return "ATOMIC"
+        if (flag == cupti.ActivityUnifiedMemoryAccessType.PREFETCH):
+            return "PREFETCH"
+    if (kind == cupti.ActivityUnifiedMemoryCounterKind.CPU_PAGE_FAULT_COUNT or
+        kind == cupti.ActivityUnifiedMemoryCounterKind.GPU_PAGE_FAULT):
+        if (flag == cupti.ActivityUnifiedMemoryMigrationCause.USER):
+            return "USER"
+        if (flag == cupti.ActivityUnifiedMemoryMigrationCause.COHERENCE):
+            return "COHERENCE"
+        if (flag == cupti.ActivityUnifiedMemoryMigrationCause.PREFETCH):
+            return "PREFETCH"
+        if (flag == cupti.ActivityUnifiedMemoryMigrationCause.EVICTION):
+            return "EVICTION"
+        if (flag == cupti.ActivityUnifiedMemoryMigrationCause.ACCESS_COUNTERS):
+            return "ACCESS_COUNTERS"
+    if (kind == cupti.ActivityUnifiedMemoryCounterKind.REMOTE_MAP):
+        if (flag == cupti.ActivityUnifiedMemoryRemoteMapCause.COHERENCE):
+            return "COHERENCE"
+        if (flag == cupti.ActivityUnifiedMemoryRemoteMapCause.THRASHING):
+            return "THRASHING"
+        if (flag == cupti.ActivityUnifiedMemoryRemoteMapCause.POLICY):
+            return "POLICY"
+        if (flag == cupti.ActivityUnifiedMemoryRemoteMapCause.OUT_OF_MEMORY):
+            return "OOM"
+        if (flag == cupti.ActivityUnifiedMemoryRemoteMapCause.EVICTION):
+            return "EVICTION"
+    if (kind == cupti.ActivityUnifiedMemoryCounterKind.THRASHING):
+        return "THRASHING"
+    if (kind == cupti.ActivityUnifiedMemoryCounterKind.THROTTLING):
+        return "THROTTLING"
+    # if (kind == cupti.ActivityUnifiedMemoryCounterKind.BYTES_TRANSFER_DTOD):
+    
 
 
 def print_activity(activity: object):
@@ -103,7 +144,7 @@ def print_activity(activity: object):
 
     if activity.kind == cupti.ActivityKind.UNIFIED_MEMORY_COUNTER:
         print(
-            f"{activity_name} [ {activity.start}, {activity.end} ] duration {activity.end - activity.start}, counter_kind {cupti.ActivityUnifiedMemoryCounterKind(activity.counter_kind).name}, value {activity.value}, address {activity.address}, src_id {activity.src_id}, dst_id {activity.dst_id}, process_id {activity.process_id}, flags {activity.flags_}"
+            f"{activity_name} [ {activity.start}, {activity.end} ] duration {activity.end - activity.start}, counter_kind {cupti.ActivityUnifiedMemoryCounterKind(activity.counter_kind).name}, value {activity.value}, address {activity.address}, src_id {activity.src_id}, dst_id {activity.dst_id}, process_id {activity.process_id}, flags {get_uvm_flag_string(activity.kind, activity.flags_)}"
         )
 
     if activity.kind == cupti.ActivityKind.MODULE:
